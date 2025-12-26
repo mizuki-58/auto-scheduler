@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoScheduler</title>
+
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="stylesheet" href="style.css" />
+  <meta name="theme-color" content="#1976d2" />
+
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="AutoScheduler" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+</head>
+
+<body>
+  <div id="app">
+    <header class="appbar">
+      <div class="appbar-title" id="appbar-title">今日の時間割</div>
+      <div class="appbar-actions">
+        <button id="generate-btn" class="appbar-btn" title="自動作成">作成</button>
+      </div>
+    </header>
+
+    <!-- Today -->
+    <section id="view-today" class="view">
+      <div class="card">
+        <div class="card-row">
+          <div class="hint">ブロックは上下ドラッグで微調整できます（5分刻み）。</div>
+          <div class="right-actions">
+            <button id="export-btn" class="pill" title="カレンダー取り込み用 .ics を出力">.ics</button>
+            <button id="clear-today-btn" class="pill ghost" title="今日の配置をクリア">クリア</button>
+          </div>
+        </div>
+
+        <div class="timeline-wrap">
+          <div class="timeline-axis" id="timeline-axis"></div>
+          <div id="schedule-list" class="timeline" aria-label="スケジュール"></div>
+        </div>
+
+        <div id="unplaced-container" class="unplaced" aria-label="未配置タスク"></div>
+      </div>
+    </section>
+
+    <!-- Tasks -->
+    <section id="view-tasks" class="view hidden">
+      <div class="card">
+        <div class="card-row">
+          <div class="hint">タスクを追加すると「今日」で自動配置できます。</div>
+          <div class="right-actions">
+            <button id="add-task-toggle" class="pill">＋追加</button>
+            <button id="import-demo-btn" class="pill ghost" title="例のタスクを追加">デモ</button>
+          </div>
+        </div>
+
+        <form id="task-form" class="task-form hidden">
+          <div class="grid">
+            <label>
+              タスク名
+              <input type="text" id="task-title" placeholder="例：レポート作成" required />
+            </label>
+
+            <label>
+              所要時間（分）
+              <input type="number" id="task-duration" min="5" step="5" placeholder="例：60" required />
+            </label>
+
+            <label>
+              締切日
+              <input type="date" id="task-deadline-date" />
+            </label>
+
+            <label>
+              締切時刻
+              <input type="time" id="task-deadline-time" />
+            </label>
+
+            <label>
+              優先度
+              <select id="task-priority">
+                <option value="高">高</option>
+                <option value="中" selected>中</option>
+                <option value="低">低</option>
+              </select>
+            </label>
+
+            <label>
+              分割可否
+              <select id="task-split">
+                <option value="可" selected>可</option>
+                <option value="不可">不可</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="primary-btn">保存</button>
+            <button type="button" id="cancel-task-form" class="secondary-btn">キャンセル</button>
+          </div>
+        </form>
+
+        <ul id="tasks-list" class="task-list" aria-label="タスク一覧"></ul>
+      </div>
+    </section>
+
+    <!-- Settings -->
+    <section id="view-settings" class="view hidden">
+      <div class="card">
+        <form id="settings-form" class="settings-form">
+          <div class="grid">
+            <label>
+              対象日
+              <input type="date" id="setting-date" />
+            </label>
+
+            <label>
+              1日の開始時間
+              <input type="time" id="setting-start" value="07:00" />
+            </label>
+
+            <label>
+              1日の終了時間
+              <input type="time" id="setting-end" value="23:00" />
+            </label>
+
+            <label>
+              タスク間バッファ（分）
+              <input type="number" id="setting-buffer" min="0" value="5" />
+            </label>
+
+            <label>
+              自動作成の方針
+              <select id="setting-strategy">
+                <option value="due" selected>締切→優先度</option>
+                <option value="priority">優先度→締切</option>
+              </select>
+            </label>
+
+            <label>
+              休憩（昼）
+              <select id="setting-lunch">
+                <option value="none" selected>なし</option>
+                <option value="12:00-13:00">12:00–13:00</option>
+                <option value="13:00-14:00">13:00–14:00</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="primary-btn">保存</button>
+            <button type="button" id="reset-btn" class="danger-btn">初期化</button>
+          </div>
+
+          <p class="hint small">
+            ※ データは端末内（LocalStorage）に保存されます。クラウド同期は行いません。
+          </p>
+        </form>
+      </div>
+    </section>
+
+    <nav class="tabbar">
+      <button id="nav-today" class="tab active" aria-label="今日">
+        <span class="tab-emoji">🗓️</span>
+        <span class="tab-label">今日</span>
+      </button>
+      <button id="nav-tasks" class="tab" aria-label="タスク">
+        <span class="tab-emoji">✅</span>
+        <span class="tab-label">タスク</span>
+      </button>
+      <button id="nav-settings" class="tab" aria-label="設定">
+        <span class="tab-emoji">⚙️</span>
+        <span class="tab-label">設定</span>
+      </button>
+    </nav>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
